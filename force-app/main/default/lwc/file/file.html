@@ -1,0 +1,33 @@
+<template>
+    <div style="display:inline-block">
+        <div class="slds-file slds-file_card slds-has-title">
+          <figure>
+            <figcaption>
+              <div class="slds-grid slds-grid_align-spread slds-p-around_x-small">
+                <div class="slds-col">
+                    <lightning-icon 
+                      class="slds-m-right_x-small" 
+                      icon-name="utility:file" 
+                      alternative-text="file" 
+                      title="File" 
+                      size="x-small">
+                    </lightning-icon>{fileName}
+                </div>
+                <div class="slds-col">
+                  <lightning-icon 
+                    class="slds-m-left_x-large" 
+                    title="Borrar" 
+                    icon-name="utility:delete" 
+                    variant={variant} 
+                    size="x-small" 
+                    onmouseover={changeVariantToError} 
+                    onmouseout={changeVariantToNormal} 
+                    onclick={deleteFile}>
+                  </lightning-icon>
+                </div>
+              </div>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+</template>

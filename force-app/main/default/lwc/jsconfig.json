@@ -1,0 +1,37 @@
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "baseUrl": ".",
+        "paths": {
+            "c/dataImporter": [
+                "dataImporter/dataImporter.js"
+            ],
+            "c/file": [
+                "file/file.js"
+            ],
+            "c/field": [
+                "field/field.js"
+            ],
+            "c/modal": [
+                "modal/modal.js"
+            ],
+            "c/fileUploadButton": [
+                "fileUploadButton/fileUploadButton.js"
+            ]
+        }
+    },
+    "include": [
+        "**/*",
+        "../../../../.sfdx/typings/lwc/**/*.d.ts"
+    ],
+    "typeAcquisition": {
+        "include": [
+            "jest"
+        ]
+    },
+    "paths": {
+        "c/*": [
+            "*"
+        ]
+    }
+}

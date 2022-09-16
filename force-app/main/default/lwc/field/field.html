@@ -1,0 +1,16 @@
+<template>
+    <span class={getClassDrop}>
+        <a class={getClassPill} title={name} style={getStyle}>
+          <span class="slds-pill__label">{label}</span>
+        </a>
+        <lightning-button-icon 
+            if:true={isRemovableField} 
+            onclick={removeValue}
+            icon-name="utility:delete" 
+            variant="bare" 
+            alternative-text="Borrar" 
+            class="slds-m-left_xx-small" 
+            title="Borrar">
+        </lightning-button-icon>
+    </span>
+</template>

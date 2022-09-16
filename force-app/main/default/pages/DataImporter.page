@@ -1,0 +1,19 @@
+<apex:page >
+    <apex:includeLightning />
+	
+    <div id="container" />
+    
+    <script>
+        $Lightning.use("c:dataImporterApp", function()
+        {
+            $Lightning.createComponent(
+                "c:dataImporter",
+                {"aura:id": "myId",},
+                "container",
+                function(cmp)
+                {
+    
+                });
+        });
+        </script>
+</apex:page>

@@ -1,0 +1,359 @@
+<template>
+    
+    <lightning-card>
+
+        <!--Title-->
+        <div slot="title">
+
+            <h3 class="slds-m-bottom_medium">
+                <lightning-icon icon-name="utility:connected_apps" size="small"></lightning-icon>
+                {title}
+            </h3>
+
+            <lightning-progress-indicator if:true={isVisiblePath} current-step={currentState} type="base" variant="base">
+                <template for:each={currentPath} for:item="step">
+                    <lightning-progress-step key={step.value} label={step.label} value={step.value}></lightning-progress-step>
+                </template>
+            </lightning-progress-indicator>
+
+        </div>
+        
+
+        <!--Body-->
+        <div class="slds-card__header">
+
+            <!--Choose Database operation-->
+            <template if:true={isChoose}>
+                <div class="slds-grid slds-grid_align-center slds-gutters">
+                    <div class="slds-col"> 
+                        <!--Insert-->
+                        <lightning-button 
+                            label={INSERT} 
+                            title={INSERT}
+                            icon-name="utility:add" 
+                            icon-position="left" 
+                            variant="success" 
+                            onclick={handleChooseOperation}>
+                        </lightning-button>
+                    </div>
+                    <div class="slds-col"> 
+                        <!--Update-->
+                        <lightning-button 
+                            label={UPDATE} 
+                            title={UPDATE} 
+                            icon-name="utility:arrowup" 
+                            icon-position="left" 
+                            variant="brand" 
+                            onclick={handleChooseOperation}>
+                        </lightning-button>
+                    </div>
+                    <div class="slds-col"> 
+                        <!--Upsert-->
+                        <lightning-button 
+                            label={UPSERT} 
+                            title={UPSERT}  
+                            icon-name="utility:forward_up" 
+                            icon-position="left" 
+                            variant="brand" 
+                            onclick={handleChooseOperation}>
+                        </lightning-button>
+                    </div>
+                    <div class="slds-col"> 
+                        <!--Delete-->
+                        <lightning-button 
+                            label={DELETE} 
+                            title={DELETE} 
+                            icon-name="utility:delete" 
+                            icon-position="left" 
+                            variant="destructive" 
+                            onclick={handleChooseOperation}>
+                        </lightning-button>
+                    </div>
+                </div>
+            </template>
+
+            <!--Choose Salesforce object-->
+            <template if:true={isInit}>
+                <lightning-combobox
+                    required
+                    name="salesforceObject"
+                    label="Seleccione un objeto"
+                    field-level-help="Debe seleccionar el objeto del cual quiere cargar los registros"
+                    message-when-value-missing="Debe elegir un objeto para continuar"
+                    value={objectPicked}
+                    placeholder="Seleccione un objeto"
+                    options={salesforceObjects}
+                    onchange={handleChangeObject}>
+                </lightning-combobox>
+            </template>
+
+            <!--Load file with records-->
+            <template if:true={isLoadFile}>
+                <!--Load file input-->
+                <lightning-input
+                    if:false={isFileUploaded}
+                    field-level-help="Seleccione un archivo con extensión XLSX o CSV"
+                    type="file"
+                    required
+                    label="Cargue su fichero"
+                    accept={ACCEPTED_FORMATS}
+                    onchange={handleUploadFinished}>
+                </lightning-input>
+
+                <!--File uploaded-->
+                <c-file 
+                    if:true={isFileUploaded} 
+                    file-name={uploadedFile.name} 
+                    onpreview={nextStep} 
+                    ondelete={deleteFile}>
+                </c-file>
+
+                <!--File preview-->
+                <div if:true={showPreviewDataTable} class="slds-text-heading_medium slds-p-top_medium">Previsualización de datos (muestra de máximo 10 registros)</div>
+                <lightning-datatable 
+                    style="display:block" 
+                    class="slds-p-top_medium"
+                    if:true={showPreviewDataTable}
+                    hide-checkbox-column	
+                    key-field={keyField}
+                    data={data}
+                    columns={columns}
+                    onheaderaction={handleHeaderAction}>
+                </lightning-datatable>
+
+            </template>
+
+            <!--Choose Upsert Field-->
+            <template if:true={isChooseUpsertField}>
+                <lightning-combobox
+                    required
+                    name="upsertField"
+                    label="Seleccione un campo"
+                    field-level-help="Debe seleccionar campo por el cual realizar el upsert"
+                    message-when-value-missing="Debe elegir un campo para continuar"
+                    value={upsertFieldPicked}
+                    placeholder="Seleccione un campo"
+                    options={objectPickedFields}
+                    onchange={handleChangeUpsertField}>
+                </lightning-combobox>
+            </template>
+
+            <!--Mapping Salesforce fields with File Columns-->
+            <template if:true={isMapping}>
+
+                <p if:true={showError} class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error">{getErrorMessage}</p>
+
+                <div class="slds-grid slds-wrap">
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-text-heading_small">Nombre de las columnas del archivo</div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-text-heading_small">Columnas seleccionadas</div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-text-heading_small">Nombre de los campos del objeto</div>
+                    </div>
+
+                    <div class="slds-col slds-size_2-of-3 slds-scrollable" style="max-height: 13rem;">
+                        <div class="slds-grid">
+                            <div class="slds-col slds-size_1-of-2">
+                                <!--Uploaded file columns-->
+                                <template for:each={columns} for:item="column">
+                                    <c-field 
+                                        key={column.fieldName} 
+                                        name={column.fieldName} 
+                                        label={column.label} 
+                                        variant="gray"
+                                        class="slds-p-around_xxx-small" 
+                                        style="display: block;">
+                                    </c-field>
+                                </template>
+                            </div>
+                        
+
+                            <div class="slds-col slds-size_1-of-2">
+                                <!--Map columns with fields-->
+                                <template for:each={fieldsMapping} for:item="fieldMapping" for:index="index">
+                                    <c-field 
+                                        key={fieldMapping.key} 
+                                        index={index}
+                                        draggable="true" 
+                                        ondragstart={handleDragStart} 
+                                        ondrop={handleDrop} 
+                                        ondragover={handleDragOver} 
+                                        name={fieldMapping.fieldName} 
+                                        label={fieldMapping.label} 
+                                        variant={fieldMapping.variant} 
+                                        remove='true' 
+                                        onremove={removeFieldMapping}
+                                        value={fieldMapping.value} 
+                                        class="slds-p-around_xxx-small" 
+                                        style="display: block;">
+                                    </c-field>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-scrollable" style="max-height: 13rem;">
+                            <!--Salesforce object fields-->
+                            <template for:each={objectPickedFields} for:item="objectPickedField">
+                                <c-field 
+                                    draggable="true" 
+                                    ondragstart={handleDragStart} 
+                                    key={objectPickedField.name} 
+                                    value={objectPickedField.value} 
+                                    label={objectPickedField.label} 
+                                    class="slds-p-around_xxx-small" 
+                                    style="display: block;">
+                                </c-field>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!--Mapping utilities-->
+                    <div class="slds-col slds-size_1-of-2 slds-m-top_small">
+                        <!--Automatic Mapping-->
+                        <lightning-button 
+                            label="Mapeo automático" 
+                            title="Mapeo automático" 
+                            icon-position="right" 
+                            icon-name="utility:touch_action" 
+                            variant="success" 
+                            onclick={automaticMapping}>
+                        </lightning-button>
+                        <!--Export Mapping-->
+                        <lightning-button 
+                            class="slds-p-left_small" 
+                            disabled={isDisabledMappingDownload} 
+                            label="Exportar mapeo" 
+                            title="Exportar mapeo" 
+                            icon-position="right" 
+                            icon-name="utility:download" 
+                            variant="brand" 
+                            onclick={downloadMapping}>
+                        </lightning-button>
+                        <a href={mappingFile} download="mapping.sdl" class="downloadLink"></a>
+                        <!--Import Mapping-->
+                        <c-file-upload-button 
+                            label="Importar mapeo" 
+                            class="slds-p-left_small" 
+                            accepted-formats=".sdl"
+                            onfileupload={handleMappingUpload}>
+                        </c-file-upload-button>
+                    </div>
+                </div>
+            </template>
+
+            <!--Importing proccess-->
+            <template if:true={isImporting}>
+                <lightning-progress-bar value={progress} size="medium" variant="circular"></lightning-progress-bar>
+                Procesando {processedRecords} registros de {jsonToImport.length} registros<br><br>
+
+                <template if:true={isError}>
+                    Se han producido {errors.length} errores
+                </template>
+
+                <!--Importing done-->
+                <template if:true={stopImporting}>
+                    <lightning-accordion>
+                        <!--Importing errors-->
+                        <lightning-accordion-section if:true={isError} name="Errores" label="Errores">
+                            <div class="slds-scrollable" style="max-height: 10rem;">
+                                <template for:each={errors} for:item='error'>
+                                    <p key={error}>{error}</p>
+                                </template>
+                            </div>
+                        </lightning-accordion-section>
+                        <!--Importing success-->
+                        <lightning-accordion-section name="Correctos" label="Correctos">
+                            <div class="slds-scrollable" style="max-height: 10rem;">
+                                <template for:each={success} for:item='suc'>
+                                    <p key={suc}>{suc}</p>
+                                </template>
+                            </div>
+                        </lightning-accordion-section>
+                    </lightning-accordion>
+                </template>
+
+            </template>
+    
+            <!--Loading screen-->
+            <template if:true={isLoading} >
+                <lightning-spinner alternative-text="Cargando" size="large"></lightning-spinner>
+            </template>
+
+        </div>
+        
+        <!--Footer-->
+        <div slot="footer" class="slds-p-top_medium slds-grid slds-grid_align-spread footer">
+            
+            <div class="slds-col">
+                <template if:true={isVisiblePreviousStep}>
+                    <!--Previous step button-->
+                    <lightning-button 
+                        label="Atrás" 
+                        title="Atrás" 
+                        icon-name="utility:chevronleft" 
+                        variant="destructive" 
+                        onclick={previousStep}>
+                    </lightning-button>
+                </template>
+
+                <!--Cancel import proccess-->
+                <template if:true={isImporting}>
+                    <lightning-button 
+                        if:false={stopImporting} 
+                        label="Cancelar importación" 
+                        title="Cancelar importación" 
+                        variant="destructive" 
+                        onclick={cancelImport}>
+                    </lightning-button>
+                </template>
+            </div>
+            
+            <div class="slds-col">
+                <!--Import in Draft Mode-->
+                <lightning-button 
+                    if:true={isMapping}  
+                    label="Importar en modo prueba" 
+                    title="Importar en modo prueba" 
+                    class="slds-p-right_medium" 
+                    icon-name="utility:edit" 
+                    icon-position="right" 
+                    disabled={isDisableNextStep} 
+                    variant="brand" 
+                    onclick={setDraftMode}>
+                </lightning-button>
+
+                <!--Next step button-->
+                <lightning-button 
+                    if:true={isVisibleNextStep} 
+                    label={nextStepLabel} 
+                    title={nextStepLabel} 
+                    icon-name="utility:chevronright" 
+                    icon-position="right" 
+                    disabled={isDisableNextStep} 
+                    variant={nextStepVariant} 
+                    onclick={nextStep}>
+                </lightning-button>
+            </div>
+        </div>
+
+        <!--Modal to show duplicate values in columns and for confirm the import proccess-->
+        <c-modal 
+            if:true={showModal} 
+            title={modalTitle} 
+            tagline={tagline} 
+            message={message} 
+            is-html={isHtml} 
+            show-confirm-button={showConfirmButton} 
+            onclose={closeModal} 
+            onconfirm={confirmModal}>
+        </c-modal>
+        
+    </lightning-card>
+
+    
+</template>
